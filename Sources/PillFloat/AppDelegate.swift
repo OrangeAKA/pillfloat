@@ -20,6 +20,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             print("Accessibility permission required. Grant access in System Settings → Privacy & Security → Accessibility.")
         }
 
+        // Listen for "open settings" from a second instance launched via Spotlight
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(openSettingsAction),
+            name: NSNotification.Name("com.krishnaakhil.pillfloat.openSettings"),
+            object: nil
+        )
+
         // Menu bar item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
