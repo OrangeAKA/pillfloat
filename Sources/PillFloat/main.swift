@@ -1,11 +1,15 @@
 import AppKit
 
-let bundleID = "com.krishnaakhil.pillfloat"
 let openSettingsNotification = "com.krishnaakhil.pillfloat.openSettings"
+let myPID = ProcessInfo.processInfo.processIdentifier
 
-// Check if another instance is already running
+// Check if another instance is already running — match by executable name,
+// not bundle ID, because Swift PM binaries in manual .app bundles may not
+// report the Info.plist bundle identifier.
 let running = NSWorkspace.shared.runningApplications.filter {
-    $0.bundleIdentifier == bundleID && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
+    $0.processIdentifier != myPID &&
+    ($0.executableURL?.lastPathComponent == "PillFloat" ||
+     $0.bundleIdentifier == "com.krishnaakhil.pillfloat")
 }
 
 if !running.isEmpty {
