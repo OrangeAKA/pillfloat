@@ -112,6 +112,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
+        let uninstallItem = NSMenuItem(title: "Uninstall PillFloat...", action: #selector(uninstall(_:)), keyEquivalent: "")
+        uninstallItem.target = self
+        menu.addItem(uninstallItem)
+
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quit(_:)), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -187,6 +191,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             watcher.stop()
         }
+    }
+
+    @objc private func uninstall(_ sender: NSMenuItem) {
+        let alert = NSAlert()
+        alert.messageText = "Uninstall PillFloat?"
+        alert.informativeText = "This will remove PillFloat from your Applications folder, disable Launch at Login, and clear all settings."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Uninstall")
+        alert.addButton(withTitle: "Cancel")
+
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
+
+        // 1. Disable login item
+        try? SMAppService.mainApp.unregister()
+
+        // 2. Clear UserDefaults
+        if let bundleID = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+        }
+        // Also clear by known keys in case bundle ID isn't set
+        for key in ["preferredPreset", "customAbsoluteX", "customAbsoluteY",
+                     "hasLaunchedBefore", "lastUpdateCheckDate", "autoCheckForUpdates"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        // 3. Move .app to Trash
+        let appURL = Bundle.main.bundleURL
+        if appURL.path.contains("/Applications/") {
+            NSWorkspace.shared.recycle([appURL]) { _, error in
+                if error != nil {
+                    // Fallback: remove with a shell script after quit
+                    let script = "sleep 1 && rm -rf '\(appURL.path)'"
+                    Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
+                }
+            }
+        }
+
+        // 4. Stop and quit
+        watcher.stop()
+        NSApplication.shared.terminate(nil)
     }
 
     @objc private func quit(_ sender: NSMenuItem) {
