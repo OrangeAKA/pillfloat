@@ -58,6 +58,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Called when the user relaunches the app from Spotlight/Finder while it's already running.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        openSettings()
+        return true
+    }
+
     // MARK: - Menu
 
     private func buildMenu() {
