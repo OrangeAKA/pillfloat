@@ -187,9 +187,6 @@ final class PillWatcher {
     // MARK: - Reposition
 
     func repositionIfNeeded(_ window: AXUIElement) {
-        // Default = passthrough, let the target app handle it
-        if store.preset.isPassthrough && !isDragging { return }
-
         // During drag, use the drag position instead of the computed target
         let target: CGPoint
         if isDragging {

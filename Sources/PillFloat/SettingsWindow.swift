@@ -92,19 +92,6 @@ final class SettingsWindow: NSWindow {
         let buttonW: CGFloat = (windowWidth - pad * 2 - 16) / 3
         let buttonH: CGFloat = 32
 
-        // Default button (full width)
-        y -= buttonH + 4
-        let defaultBtn = NSButton(title: "Default (Native Position)", target: self, action: #selector(presetClicked(_:)))
-        defaultBtn.bezelStyle = .rounded
-        defaultBtn.frame = NSRect(x: pad, y: y, width: windowWidth - pad * 2, height: buttonH)
-        defaultBtn.tag = PillPreset.allCases.firstIndex(of: .defaultPosition) ?? 0
-        if store.preset == .defaultPosition {
-            defaultBtn.state = .on
-            defaultBtn.contentTintColor = .controlAccentColor
-        }
-        presetButtons[.defaultPosition] = defaultBtn
-        content.addSubview(defaultBtn)
-
         // Position grid
         let presetRows: [[PillPreset]] = [
             [.topLeft, .topCenter, .topRight],

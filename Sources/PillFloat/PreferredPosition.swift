@@ -1,17 +1,13 @@
 import AppKit
 
 enum PillPreset: String, CaseIterable, Equatable {
-    case defaultPosition = "Default"
-    case bottomCenter = "Bottom Center"
+    case bottomCenter = "Bottom Center (Default)"
     case topCenter = "Top Center"
     case topLeft = "Top Left"
     case topRight = "Top Right"
     case bottomLeft = "Bottom Left"
     case bottomRight = "Bottom Right"
     case custom = "Custom"
-
-    /// When true, the watcher should not override — let the target app place the pill natively.
-    var isPassthrough: Bool { self == .defaultPosition }
 
     private static let visiblePillHeight: CGFloat = 70
 
@@ -20,8 +16,6 @@ enum PillPreset: String, CaseIterable, Equatable {
         let invisibleTop = pillSize.height - Self.visiblePillHeight
 
         switch self {
-        case .defaultPosition:
-            return .zero  // Not used — watcher skips repositioning
         case .bottomCenter:
             return CGPoint(
                 x: workArea.origin.x + (workArea.width - pillSize.width) / 2,
@@ -87,7 +81,8 @@ final class PositionStore {
            let p = PillPreset(rawValue: raw) {
             preset = p
         } else {
-            preset = .defaultPosition
+            // Migrate from old "Default" preset or set initial default
+            preset = .bottomCenter
         }
         customAbsoluteX = CGFloat(UserDefaults.standard.double(forKey: absXKey))
         customAbsoluteY = CGFloat(UserDefaults.standard.double(forKey: absYKey))

@@ -231,16 +231,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             UserDefaults.standard.removeObject(forKey: key)
         }
 
-        // 3. Remove .app after quit via background script
-        // Can't delete a running .app directly — spawn a detached process
-        // that waits for us to exit, then removes the bundle.
+        // 3. Remove .app after quit (only from /Applications)
         let appURL = Bundle.main.bundleURL
-        let script = "sleep 1 && rm -rf '\(appURL.path)'"
-        Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
+        if appURL.path.hasPrefix("/Applications/") {
+            let script = "sleep 1 && rm -rf '\(appURL.path)'"
+            Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
+        }
 
-        // 4. Stop and quit
+        // 4. Show uninstalling feedback, then quit
         watcher.stop()
-        NSApplication.shared.terminate(nil)
+        let feedbackWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 260, height: 70),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        feedbackWindow.title = "PillFloat"
+        feedbackWindow.center()
+        let feedbackView = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 70))
+        let spinner = NSProgressIndicator(frame: NSRect(x: 20, y: 25, width: 20, height: 20))
+        spinner.style = .spinning
+        spinner.startAnimation(nil)
+        feedbackView.addSubview(spinner)
+        let label = NSTextField(labelWithString: "Uninstalling PillFloat...")
+        label.frame = NSRect(x: 48, y: 25, width: 200, height: 20)
+        label.font = .systemFont(ofSize: 13, weight: .medium)
+        feedbackView.addSubview(label)
+        feedbackWindow.contentView = feedbackView
+        feedbackWindow.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            NSApplication.shared.terminate(nil)
+        }
     }
 
     private func showStalePermissionAlert() {
