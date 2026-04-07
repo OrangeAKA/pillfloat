@@ -231,17 +231,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             UserDefaults.standard.removeObject(forKey: key)
         }
 
-        // 3. Move .app to Trash
+        // 3. Remove .app after quit via background script
+        // Can't delete a running .app directly — spawn a detached process
+        // that waits for us to exit, then removes the bundle.
         let appURL = Bundle.main.bundleURL
-        if appURL.path.contains("/Applications/") {
-            NSWorkspace.shared.recycle([appURL]) { _, error in
-                if error != nil {
-                    // Fallback: remove with a shell script after quit
-                    let script = "sleep 1 && rm -rf '\(appURL.path)'"
-                    Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
-                }
-            }
-        }
+        let script = "sleep 1 && rm -rf '\(appURL.path)'"
+        Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
 
         // 4. Stop and quit
         watcher.stop()
