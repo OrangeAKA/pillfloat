@@ -12,12 +12,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: SettingsWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Prompt for Accessibility if not yet granted.
-        // PillWatcher polls every 3s and auto-recovers when permission is granted.
-        // Settings window shows live permission status with a Fix button.
-        AXIsProcessTrustedWithOptions(
+        // Check Accessibility permission
+        let trusted = AXIsProcessTrustedWithOptions(
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         )
+
+        // If macOS says trusted but AX calls actually fail, the permission is
+        // stale (binary hash changed after update). Show clear instructions.
+        if trusted && !AXPermissionChecker.isAXActuallyWorking() {
+            let alert = NSAlert()
+            alert.messageText = "Accessibility Permission Needs Refresh"
+            alert.informativeText = "macOS shows PillFloat as enabled, but the permission needs to be refreshed after the update.\n\n1. Click \"Open Accessibility Settings\" below\n2. Toggle PillFloat OFF\n3. Toggle PillFloat back ON\n\nPillFloat will start working automatically."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "Open Accessibility Settings")
+            alert.addButton(withTitle: "Later")
+            NSApp.activate(ignoringOtherApps: true)
+            if alert.runModal() == .alertFirstButtonReturn {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
 
         // Listen for "open settings" from a second instance launched via Spotlight
         DistributedNotificationCenter.default().addObserver(
