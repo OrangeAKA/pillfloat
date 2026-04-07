@@ -289,9 +289,17 @@ final class SettingsWindow: NSWindow {
         checkUpdateButton.isEnabled = false
         checkUpdateButton.title = "Checking..."
         UpdateChecker.shared.check { [weak self] info in
-            self?.checkUpdateButton.isEnabled = true
-            self?.checkUpdateButton.title = "Check for Updates"
-            self?.refreshUpdateUI()
+            guard let self = self else { return }
+            self.checkUpdateButton.isEnabled = true
+            self.refreshUpdateUI()
+            if info == nil {
+                self.checkUpdateButton.title = "No New Updates Available"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
+                    self?.checkUpdateButton.title = "Check for Updates"
+                }
+            } else {
+                self.checkUpdateButton.title = "Check for Updates"
+            }
         }
     }
 
