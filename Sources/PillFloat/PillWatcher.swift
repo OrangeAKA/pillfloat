@@ -15,8 +15,14 @@ final class PillWatcher {
     private var dragPosition: CGPoint = .zero // current drag target in CG coords
     private var globalMonitors: [Any] = []
 
+    // Permission state
+    private(set) var axWorking = false
+    private var permissionTimer: Timer?
+
     /// Called when a drag completes and a custom position is saved.
     var onDragComplete: (() -> Void)?
+    /// Called when AX permission status changes.
+    var onPermissionChanged: ((Bool) -> Void)?
 
     init(store: PositionStore) {
         self.store = store
@@ -33,21 +39,55 @@ final class PillWatcher {
         nc.addObserver(self, selector: #selector(appTerminated(_:)),
                        name: NSWorkspace.didTerminateApplicationNotification, object: nil)
 
-        startGlobalMonitor()
-
-        if let app = ws.runningApplications.first(where: {
-            $0.bundleIdentifier == "com.electron.wispr-flow"
-        }) {
-            attach(to: app.processIdentifier)
-        }
+        checkPermissionAndSetup()
     }
 
     func stop() {
         pollTimer?.invalidate()
         pollTimer = nil
+        permissionTimer?.invalidate()
+        permissionTimer = nil
         teardownObserver()
         stopGlobalMonitor()
         NSWorkspace.shared.notificationCenter.removeObserver(self)
+    }
+
+    // MARK: - Permission Check
+
+    private func checkPermissionAndSetup() {
+        let working = AXPermissionChecker.isAXActuallyWorking()
+        let wasWorking = axWorking
+        axWorking = working
+
+        if working {
+            permissionTimer?.invalidate()
+            permissionTimer = nil
+
+            if globalMonitors.isEmpty {
+                startGlobalMonitor()
+            }
+            if targetPID == nil {
+                if let app = NSWorkspace.shared.runningApplications.first(where: {
+                    $0.bundleIdentifier == "com.electron.wispr-flow"
+                }) {
+                    attach(to: app.processIdentifier)
+                }
+            }
+            if !wasWorking {
+                onPermissionChanged?(true)
+            }
+        } else {
+            if permissionTimer == nil {
+                permissionTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+                    self?.checkPermissionAndSetup()
+                }
+            }
+            if wasWorking {
+                stopGlobalMonitor()
+                detach()
+                onPermissionChanged?(false)
+            }
+        }
     }
 
     // MARK: - App launch/quit

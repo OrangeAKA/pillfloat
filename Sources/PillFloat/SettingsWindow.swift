@@ -18,9 +18,11 @@ final class SettingsWindow: NSWindow {
     private var copyCommandButton: NSButton!
     private var releaseNotesButton: NSButton!
     private var checkUpdateButton: NSButton!
+    private var axStatusLabel: NSTextField!
+    private var fixPermissionButton: NSButton!
     private var wisprStatusTimer: Timer?
 
-    private let baseWindowHeight: CGFloat = 580
+    private let baseWindowHeight: CGFloat = 600
     private let bannerHeight: CGFloat = 90
     private let windowWidth: CGFloat = 380
 
@@ -197,11 +199,23 @@ final class SettingsWindow: NSWindow {
 
         // -- Footer --
         y -= 16
-        statusLabel = makeLabel("Target App: Checking...", size: 11, weight: .regular)
+        statusLabel = makeLabel("Wispr Flow: Checking...", size: 11, weight: .regular)
         statusLabel.textColor = .tertiaryLabelColor
         y -= 14
         statusLabel.frame = NSRect(x: pad, y: y, width: 300, height: 14)
         content.addSubview(statusLabel)
+
+        axStatusLabel = makeLabel("Accessibility: Checking...", size: 11, weight: .regular)
+        axStatusLabel.textColor = .tertiaryLabelColor
+        y -= 16
+        axStatusLabel.frame = NSRect(x: pad, y: y, width: 220, height: 14)
+        content.addSubview(axStatusLabel)
+
+        fixPermissionButton = NSButton(title: "Fix...", target: self, action: #selector(openAccessibilitySettings))
+        fixPermissionButton.bezelStyle = .inline
+        fixPermissionButton.isHidden = true
+        fixPermissionButton.frame = NSRect(x: pad + 225, y: y - 2, width: 40, height: 18)
+        content.addSubview(fixPermissionButton)
 
         versionLabel = makeLabel("v\(UpdateChecker.shared.currentVersion)", size: 11, weight: .regular)
         versionLabel.textColor = .tertiaryLabelColor
@@ -366,13 +380,34 @@ final class SettingsWindow: NSWindow {
         }
     }
 
-    // MARK: - Target App Status
+    // MARK: - Target App & Permission Status
 
     private func updateTargetAppStatus() {
         let running = NSWorkspace.shared.runningApplications.contains {
             $0.bundleIdentifier == "com.electron.wispr-flow"
         }
         statusLabel.stringValue = running ? "Wispr Flow: Running" : "Wispr Flow: Not detected"
+
+        let axWorking = AXPermissionChecker.isAXActuallyWorking()
+        updatePermissionStatus(axWorking)
+    }
+
+    func updatePermissionStatus(_ working: Bool) {
+        if working {
+            axStatusLabel.stringValue = "Accessibility: Granted"
+            axStatusLabel.textColor = .tertiaryLabelColor
+            fixPermissionButton.isHidden = true
+        } else {
+            axStatusLabel.stringValue = "Accessibility: Needs refresh"
+            axStatusLabel.textColor = .systemRed
+            fixPermissionButton.isHidden = false
+        }
+    }
+
+    @objc private func openAccessibilitySettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     // MARK: - Helpers

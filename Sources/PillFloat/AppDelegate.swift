@@ -12,11 +12,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: SettingsWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Check accessibility
+        // Check accessibility — three states: not trusted, working, stale
         let trusted = AXIsProcessTrustedWithOptions(
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         )
-        if !trusted {
+        if trusted && !AXPermissionChecker.isAXActuallyWorking() {
+            // Stale permission — binary changed but TCC entry is outdated
+            showStalePermissionAlert()
+        } else if !trusted {
             print("Accessibility permission required. Grant access in System Settings → Privacy & Security → Accessibility.")
         }
 
@@ -43,6 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         watcher.onDragComplete = { [weak self] in
             self?.updateCheckmarks()
             self?.settingsWindow?.refreshUpdateUI()
+        }
+        watcher.onPermissionChanged = { [weak self] working in
+            self?.settingsWindow?.updatePermissionStatus(working)
         }
         watcher.start()
 
@@ -240,6 +246,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 4. Stop and quit
         watcher.stop()
         NSApplication.shared.terminate(nil)
+    }
+
+    private func showStalePermissionAlert() {
+        let alert = NSAlert()
+        alert.messageText = "Accessibility Permission Needs Refresh"
+        alert.informativeText = "PillFloat was updated but macOS needs you to re-grant Accessibility access.\n\n1. Open System Settings → Privacy & Security → Accessibility\n2. Toggle PillFloat OFF\n3. Toggle PillFloat back ON\n\nPillFloat will start working automatically once refreshed."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Open Accessibility Settings")
+        alert.addButton(withTitle: "I'll Fix It Later")
+
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 
     @objc private func quit(_ sender: NSMenuItem) {
