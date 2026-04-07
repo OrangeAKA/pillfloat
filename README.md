@@ -109,6 +109,39 @@ PillFloat shows up in System Settings → Login Items & Background Activity. Nor
 
 PillFloat stores only your position preference and a "last update check" timestamp locally. The update checker makes a single GET request to the GitHub API. No telemetry, no tracking, no data collection. You can disable the update checker in Settings.
 
+## Troubleshooting
+
+### PillFloat isn't moving the pill / drag doesn't work
+
+This is almost always an Accessibility permission issue. PillFloat will show an alert on launch if it detects a stale permission, but if you missed it:
+
+1. Open **System Settings → Privacy & Security → Accessibility**
+2. Select PillFloat in the list and click the **−** (minus) button to remove it
+3. Relaunch PillFloat — it will prompt you to re-add it
+4. Click **"Open Accessibility Settings"** in the prompt, or go to Accessibility manually
+5. Toggle PillFloat **ON**
+6. PillFloat starts working within a few seconds, no restart needed
+
+**Why does this happen?** PillFloat isn't signed with an Apple Developer certificate. macOS tracks Accessibility permissions by the app's binary hash. When the binary changes (after an update), the old permission becomes stale. macOS still shows the app as "enabled" but the permission doesn't actually work. Homebrew installs handle this automatically by clearing the stale entry, but manual installs may need the steps above.
+
+### PillFloat shows "Accessibility: Needs refresh" in Settings
+
+Same fix as above. Click the **Fix...** button next to the status, which opens Accessibility Settings directly. Toggle PillFloat off and back on.
+
+### Pill briefly flickers to the wrong position
+
+Wispr Flow resets the pill position every ~400ms. PillFloat overrides every 150ms. You may occasionally see a brief flash to bottom-center before it snaps back. This is a limitation of how Wispr Flow works and can't be fully eliminated.
+
+### Uninstalling via the app when installed with Homebrew
+
+The in-app uninstall removes the `.app` from Applications but can't clean up Homebrew's records. If you installed via Homebrew, use:
+
+```bash
+brew uninstall --cask pillfloat
+```
+
+The uninstall dialog reminds you of this.
+
 ## Built with
 
 Swift, AppKit, ApplicationServices (Accessibility API), ServiceManagement, URLSession. No external dependencies.
