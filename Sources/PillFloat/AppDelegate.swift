@@ -205,7 +205,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func performUninstall() {
         let alert = NSAlert()
         alert.messageText = "Uninstall PillFloat?"
-        alert.informativeText = "This will remove PillFloat from your Applications folder, disable Launch at Login, and clear all settings."
+        alert.informativeText = "This will remove PillFloat from your Applications folder, disable Launch at Login, and clear all settings.\n\nIf you installed via Homebrew, use this command instead:\nbrew uninstall --cask pillfloat"
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Uninstall")
         alert.addButton(withTitle: "Cancel")
