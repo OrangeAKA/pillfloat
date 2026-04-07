@@ -92,6 +92,19 @@ final class SettingsWindow: NSWindow {
         let buttonW: CGFloat = (windowWidth - pad * 2 - 16) / 3
         let buttonH: CGFloat = 32
 
+        // Off button (full width) — let Wispr position the pill natively
+        y -= buttonH + 4
+        let offBtn = NSButton(title: PillPreset.off.rawValue, target: self, action: #selector(presetClicked(_:)))
+        offBtn.bezelStyle = .rounded
+        offBtn.frame = NSRect(x: pad, y: y, width: windowWidth - pad * 2, height: buttonH)
+        offBtn.tag = PillPreset.allCases.firstIndex(of: .off) ?? 0
+        if store.preset == .off {
+            offBtn.state = .on
+            offBtn.contentTintColor = .controlAccentColor
+        }
+        presetButtons[.off] = offBtn
+        content.addSubview(offBtn)
+
         // Position grid
         let presetRows: [[PillPreset]] = [
             [.topLeft, .topCenter, .topRight],

@@ -187,6 +187,9 @@ final class PillWatcher {
     // MARK: - Reposition
 
     func repositionIfNeeded(_ window: AXUIElement) {
+        // Off = let Wispr Flow position the pill natively
+        if store.preset.isPassthrough && !isDragging { return }
+
         // During drag, use the drag position instead of the computed target
         let target: CGPoint
         if isDragging {

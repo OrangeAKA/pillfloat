@@ -1,13 +1,17 @@
 import AppKit
 
 enum PillPreset: String, CaseIterable, Equatable {
-    case bottomCenter = "Bottom Center (Default)"
+    case off = "Off (Wispr Default)"
+    case bottomCenter = "Bottom Center"
     case topCenter = "Top Center"
     case topLeft = "Top Left"
     case topRight = "Top Right"
     case bottomLeft = "Bottom Left"
     case bottomRight = "Bottom Right"
     case custom = "Custom"
+
+    /// When true, PillFloat does not override — Wispr Flow positions the pill itself.
+    var isPassthrough: Bool { self == .off }
 
     private static let visiblePillHeight: CGFloat = 70
 
@@ -16,6 +20,8 @@ enum PillPreset: String, CaseIterable, Equatable {
         let invisibleTop = pillSize.height - Self.visiblePillHeight
 
         switch self {
+        case .off:
+            return .zero  // Not used — watcher skips repositioning
         case .bottomCenter:
             return CGPoint(
                 x: workArea.origin.x + (workArea.width - pillSize.width) / 2,
@@ -81,8 +87,8 @@ final class PositionStore {
            let p = PillPreset(rawValue: raw) {
             preset = p
         } else {
-            // Migrate from old "Default" preset or set initial default
-            preset = .bottomCenter
+            // Default: don't override Wispr's native position until user picks one
+            preset = .off
         }
         customAbsoluteX = CGFloat(UserDefaults.standard.double(forKey: absXKey))
         customAbsoluteY = CGFloat(UserDefaults.standard.double(forKey: absYKey))
