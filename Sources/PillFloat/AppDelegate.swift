@@ -167,6 +167,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.onEnabledToggled = { [weak self] isOn in
             self?.setEnabled(isOn)
         }
+        window.onUninstall = { [weak self] in
+            self?.performUninstall()
+        }
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow = window
@@ -194,6 +197,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func uninstall(_ sender: NSMenuItem) {
+        performUninstall()
+    }
+
+    private func performUninstall() {
         let alert = NSAlert()
         alert.messageText = "Uninstall PillFloat?"
         alert.informativeText = "This will remove PillFloat from your Applications folder, disable Launch at Login, and clear all settings."

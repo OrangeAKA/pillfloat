@@ -13,18 +13,21 @@ final class SettingsWindow: NSWindow {
     private var versionLabel: NSTextField!
     private var updateBanner: NSView!
     private var updateTitleLabel: NSTextField!
-    private var updateNotesLabel: NSTextField!
-    private var updateButton: NSButton!
+    private var updateCommandLabel: NSTextField!
+    private var copyCommandButton: NSButton!
+    private var releaseNotesButton: NSButton!
     private var checkUpdateButton: NSButton!
     private var wisprStatusTimer: Timer?
+
+    private let baseWindowHeight: CGFloat = 580
+    private let bannerHeight: CGFloat = 80
+    private let windowWidth: CGFloat = 380
 
     init(store: PositionStore, isEnabled: Bool, onPositionChanged: @escaping () -> Void) {
         self.store = store
         self.onPositionChanged = onPositionChanged
 
-        let windowWidth: CGFloat = 380
-        let windowHeight: CGFloat = 550
-        let frame = NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight)
+        let frame = NSRect(x: 0, y: 0, width: windowWidth, height: baseWindowHeight)
 
         super.init(
             contentRect: frame,
@@ -37,33 +40,37 @@ final class SettingsWindow: NSWindow {
         self.isReleasedWhenClosed = false
         self.center()
 
-        let content = NSView(frame: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight))
+        let content = NSView(frame: NSRect(x: 0, y: 0, width: windowWidth, height: baseWindowHeight))
         let pad: CGFloat = 20
-        var y = windowHeight - pad
+        var y = baseWindowHeight - pad
 
-        // -- Update banner (hidden by default, no space reserved when hidden) --
-        updateBanner = NSView(frame: NSRect(x: pad, y: 0, width: windowWidth - pad * 2, height: 70))
+        // -- Update banner (hidden by default; window grows taller when shown) --
+        updateBanner = NSView(frame: .zero)
         updateBanner.wantsLayer = true
         updateBanner.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.1).cgColor
         updateBanner.layer?.cornerRadius = 8
         updateBanner.isHidden = true
 
         updateTitleLabel = makeLabel("Update available", size: 12, weight: .semibold)
-        updateTitleLabel.frame = NSRect(x: 10, y: 44, width: 240, height: 18)
+        updateTitleLabel.frame = NSRect(x: 10, y: 50, width: 300, height: 18)
         updateBanner.addSubview(updateTitleLabel)
 
-        updateNotesLabel = makeLabel("", size: 11, weight: .regular)
-        updateNotesLabel.textColor = .secondaryLabelColor
-        updateNotesLabel.frame = NSRect(x: 10, y: 10, width: 240, height: 30)
-        updateNotesLabel.maximumNumberOfLines = 2
-        updateBanner.addSubview(updateNotesLabel)
+        updateCommandLabel = makeLabel("brew upgrade --cask pillfloat", size: 11, weight: .medium)
+        updateCommandLabel.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .medium)
+        updateCommandLabel.textColor = .secondaryLabelColor
+        updateCommandLabel.frame = NSRect(x: 10, y: 30, width: 300, height: 16)
+        updateBanner.addSubview(updateCommandLabel)
 
-        updateButton = NSButton(title: "Download", target: self, action: #selector(openDownload))
-        updateButton.bezelStyle = .rounded
-        updateButton.frame = NSRect(x: windowWidth - pad * 2 - 90, y: 20, width: 80, height: 30)
-        updateBanner.addSubview(updateButton)
+        copyCommandButton = NSButton(title: "Copy Command", target: self, action: #selector(copyBrewCommand))
+        copyCommandButton.bezelStyle = .rounded
+        copyCommandButton.frame = NSRect(x: 10, y: 2, width: 120, height: 26)
+        updateBanner.addSubview(copyCommandButton)
 
-        // Only reserve space for banner when visible (positioned later in refreshUpdateUI)
+        releaseNotesButton = NSButton(title: "Release Notes", target: self, action: #selector(openDownload))
+        releaseNotesButton.bezelStyle = .inline
+        releaseNotesButton.frame = NSRect(x: 138, y: 2, width: 110, height: 26)
+        updateBanner.addSubview(releaseNotesButton)
+
         content.addSubview(updateBanner)
 
         // -- Section: Presets --
@@ -173,8 +180,17 @@ final class SettingsWindow: NSWindow {
         checkUpdateButton.frame = NSRect(x: pad, y: y, width: 160, height: 28)
         content.addSubview(checkUpdateButton)
 
+        // -- Uninstall --
+        y -= 16
+        let uninstallBtn = NSButton(title: "Uninstall PillFloat...", target: self, action: #selector(uninstallClicked))
+        uninstallBtn.bezelStyle = .rounded
+        uninstallBtn.contentTintColor = .systemRed
+        y -= 28
+        uninstallBtn.frame = NSRect(x: pad, y: y, width: 160, height: 28)
+        content.addSubview(uninstallBtn)
+
         // -- Footer --
-        y -= 20
+        y -= 16
         statusLabel = makeLabel("Target App: Checking...", size: 11, weight: .regular)
         statusLabel.textColor = .tertiaryLabelColor
         y -= 14
@@ -279,30 +295,58 @@ final class SettingsWindow: NSWindow {
         }
     }
 
+    @objc private func copyBrewCommand() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString("brew upgrade --cask pillfloat", forType: .string)
+        copyCommandButton.title = "Copied!"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.copyCommandButton.title = "Copy Command"
+        }
+    }
+
     @objc private func openDownload() {
         if let url = UpdateChecker.shared.latestUpdate?.downloadURL {
             NSWorkspace.shared.open(url)
         }
     }
 
+    var onUninstall: (() -> Void)?
+
+    @objc private func uninstallClicked() {
+        onUninstall?()
+    }
+
     func refreshUpdateUI() {
+        let pad: CGFloat = 20
         if let update = UpdateChecker.shared.latestUpdate {
+            let needsResize = updateBanner.isHidden
             updateBanner.isHidden = false
-            // Position banner at the top of the content area
-            let windowWidth = self.frame.width
-            let pad: CGFloat = 20
-            let contentHeight = self.contentView?.frame.height ?? 510
-            updateBanner.frame = NSRect(x: pad, y: contentHeight - pad - 70, width: windowWidth - pad * 2, height: 70)
             updateTitleLabel.stringValue = "Update available: v\(update.version)"
-            let lines = update.releaseNotes.components(separatedBy: .newlines)
-                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-                .prefix(2)
-                .joined(separator: "\n")
-            updateNotesLabel.stringValue = lines.isEmpty ? "A new version is available." : lines
             versionLabel.stringValue = "v\(UpdateChecker.shared.currentVersion) — Update available"
+
+            if needsResize {
+                let newHeight = baseWindowHeight + bannerHeight + pad
+                var windowFrame = self.frame
+                windowFrame.origin.y -= (newHeight - windowFrame.height)
+                windowFrame.size.height = newHeight
+                self.setFrame(windowFrame, display: true, animate: true)
+                self.contentView?.frame.size.height = newHeight
+            }
+
+            let contentHeight = self.contentView?.frame.height ?? baseWindowHeight
+            updateBanner.frame = NSRect(x: pad, y: contentHeight - pad - bannerHeight, width: windowWidth - pad * 2, height: bannerHeight)
         } else {
+            let needsResize = !updateBanner.isHidden
             updateBanner.isHidden = true
             versionLabel.stringValue = "v\(UpdateChecker.shared.currentVersion) — No new updates"
+
+            if needsResize {
+                var windowFrame = self.frame
+                windowFrame.origin.y += (windowFrame.height - baseWindowHeight)
+                windowFrame.size.height = baseWindowHeight
+                self.setFrame(windowFrame, display: true, animate: true)
+                self.contentView?.frame.size.height = baseWindowHeight
+            }
         }
     }
 
