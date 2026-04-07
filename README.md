@@ -14,8 +14,9 @@ Wispr Flow's dictation pill is stuck at the bottom-center of your screen. It get
 - **Drag to move** — Grab the pill and drag it anywhere on screen
 - **Visual picker** — Minimap in Settings where you drag a pill to set a custom spot
 - **Launch at Login** — Starts automatically, stays out of your way
-- **Update checker** — Checks GitHub for new versions (opt-in, no telemetry)
-- **Settings window** — Opens on first launch, accessible anytime via menu bar
+- **Update checker** — Checks GitHub for new versions, shows `brew upgrade` command with one-click copy (opt-in, no telemetry)
+- **In-app uninstall** — Menu bar or Settings → removes the app, clears settings, disables login item
+- **Settings window** — Opens on first launch, accessible anytime via menu bar or by relaunching from Spotlight
 
 ## Installation
 
@@ -51,11 +52,11 @@ To uninstall: `make uninstall`
 
 ### macOS Gatekeeper
 
-Since PillFloat isn't signed with an Apple Developer certificate, macOS will block it on first launch. Two ways to fix this:
+Since PillFloat isn't signed with an Apple Developer certificate, macOS may block it on first launch.
 
-**Option A** — Right-click the app in Finder → "Open" → click "Open" in the dialog. One-time only.
+**Homebrew users:** This is handled automatically. No action needed.
 
-**Option B** — Run this in Terminal after installing:
+**Manual/source install:** Right-click the app in Finder → "Open" → click "Open" in the dialog (one-time), or run:
 ```bash
 xattr -rd com.apple.quarantine /Applications/PillFloat.app
 ```
@@ -65,6 +66,8 @@ xattr -rd com.apple.quarantine /Applications/PillFloat.app
 On first launch, macOS will ask you to grant Accessibility access. Go to **System Settings → Privacy & Security → Accessibility** and enable PillFloat.
 
 This is required — PillFloat uses the Accessibility API to find and move the pill window.
+
+**After updates:** macOS may invalidate the Accessibility permission when the binary changes (common with unsigned apps). If drag or repositioning stops working after an update, PillFloat will detect this and show instructions to fix it. The quick fix: toggle PillFloat off and back on in System Settings → Accessibility. PillFloat auto-recovers within seconds, no restart needed.
 
 ## Usage
 
@@ -109,12 +112,13 @@ Swift, AppKit, ApplicationServices (Accessibility API), ServiceManagement, URLSe
 | File | What it does |
 |---|---|
 | `main.swift` | Entry point, single-instance detection |
-| `AppDelegate.swift` | Menu bar, settings window, update notifications |
+| `AppDelegate.swift` | Menu bar, settings window, update notifications, uninstall |
 | `PillWatcher.swift` | Core — AX window detection, repositioning, drag handling |
 | `PreferredPosition.swift` | Presets, custom coords, persistence |
 | `SettingsWindow.swift` | Settings UI with presets, minimap, toggles |
 | `ScreenUtility.swift` | Screen geometry, coordinate conversion |
 | `UpdateChecker.swift` | GitHub release API, version comparison |
+| `AXPermissionChecker.swift` | Runtime Accessibility permission validation |
 
 ## Requirements
 
