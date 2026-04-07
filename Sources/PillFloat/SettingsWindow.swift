@@ -318,6 +318,7 @@ final class SettingsWindow: NSWindow {
 
     func refreshUpdateUI() {
         let pad: CGFloat = 20
+        let topInset: CGFloat = 8
         if let update = UpdateChecker.shared.latestUpdate {
             let needsResize = updateBanner.isHidden
             updateBanner.isHidden = false
@@ -325,7 +326,7 @@ final class SettingsWindow: NSWindow {
             versionLabel.stringValue = "v\(UpdateChecker.shared.currentVersion) — Update available"
 
             if needsResize {
-                let newHeight = baseWindowHeight + bannerHeight + pad
+                let newHeight = baseWindowHeight + bannerHeight + pad + topInset
                 var windowFrame = self.frame
                 windowFrame.origin.y -= (newHeight - windowFrame.height)
                 windowFrame.size.height = newHeight
@@ -334,7 +335,7 @@ final class SettingsWindow: NSWindow {
             }
 
             let contentHeight = self.contentView?.frame.height ?? baseWindowHeight
-            updateBanner.frame = NSRect(x: pad, y: contentHeight - pad - bannerHeight, width: windowWidth - pad * 2, height: bannerHeight)
+            updateBanner.frame = NSRect(x: pad, y: contentHeight - pad - topInset - bannerHeight, width: windowWidth - pad * 2, height: bannerHeight)
         } else {
             let needsResize = !updateBanner.isHidden
             updateBanner.isHidden = true
