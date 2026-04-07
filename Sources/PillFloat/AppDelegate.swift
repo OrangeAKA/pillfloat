@@ -227,14 +227,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             UserDefaults.standard.removeObject(forKey: key)
         }
 
-        // 3. Remove .app after quit (only from /Applications)
+        // 3. Remove Accessibility permission entry
+        Process.launchedProcess(
+            launchPath: "/usr/bin/tccutil",
+            arguments: ["reset", "Accessibility", "com.krishnaakhil.pillfloat"]
+        )
+
+        // 4. Remove .app after quit (only from /Applications/)
         let appURL = Bundle.main.bundleURL
         if appURL.path.hasPrefix("/Applications/") {
             let script = "sleep 1 && rm -rf '\(appURL.path)'"
             Process.launchedProcess(launchPath: "/bin/bash", arguments: ["-c", script])
         }
 
-        // 4. Show uninstalling feedback, then quit
+        // 5. Show uninstalling feedback, then quit
         watcher.stop()
         let feedbackWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 260, height: 70),

@@ -22,7 +22,7 @@ final class SettingsWindow: NSWindow {
     private var fixPermissionButton: NSButton!
     private var wisprStatusTimer: Timer?
 
-    private let baseWindowHeight: CGFloat = 600
+    private let baseWindowHeight: CGFloat = 645
     private let bannerHeight: CGFloat = 90
     private let windowWidth: CGFloat = 380
 
