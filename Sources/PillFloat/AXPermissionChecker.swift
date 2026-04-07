@@ -1,31 +1,34 @@
+import AppKit
 import ApplicationServices
 
 enum AXPermissionChecker {
     /// Performs a real AX call to verify permission is actually working,
     /// not just reported as granted by the TCC database (which can be stale
     /// after a binary update for unsigned apps).
+    ///
+    /// Probes by querying Finder's kAXWindowsAttribute (Finder is always
+    /// running). Only returns false if the result is .apiDisabled, which
+    /// definitively means permission is denied/stale.
     static func isAXActuallyWorking() -> Bool {
-        let systemWide = AXUIElementCreateSystemWide()
+        // Find Finder's PID — it's always running
+        guard let finder = NSWorkspace.shared.runningApplications.first(where: {
+            $0.bundleIdentifier == "com.apple.finder"
+        }) else {
+            // Finder not running (extremely unlikely) — fall back to trusting TCC
+            return AXIsProcessTrustedWithOptions(nil)
+        }
+
+        let finderApp = AXUIElementCreateApplication(finder.processIdentifier)
         var ref: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(
-            systemWide,
-            kAXFocusedApplicationAttribute as CFString,
+            finderApp,
+            kAXWindowsAttribute as CFString,
             &ref
         )
-        // .success, .noValue, .notImplemented all mean AX is functional
-        // .apiDisabled means permission is stale/denied
-        switch result {
-        case .success, .noValue, .notImplemented, .attributeUnsupported:
-            return true
-        default:
-            return false
-        }
-    }
 
-    /// Returns true when macOS reports the app as trusted but AX calls
-    /// actually fail — indicates a stale TCC entry after binary change.
-    static func isTrustedButStale() -> Bool {
-        let trusted = AXIsProcessTrustedWithOptions(nil)
-        return trusted && !isAXActuallyWorking()
+        // .apiDisabled is the definitive "permission denied" signal.
+        // Everything else (.success, .cannotComplete, .noValue, etc.)
+        // means AX is functional for this app.
+        return result != .apiDisabled
     }
 }
