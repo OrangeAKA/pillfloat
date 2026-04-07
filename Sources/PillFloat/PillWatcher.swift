@@ -225,9 +225,31 @@ final class PillWatcher {
     }
 
     func forceReposition() {
-        if let win = statusWindow {
-            repositionIfNeeded(win)
+        guard let win = statusWindow else { return }
+
+        // When switching to Off, do a one-time move to bottom-center
+        // (Wispr's approximate native position) so the user sees immediate
+        // feedback, then stop overriding.
+        if store.preset.isPassthrough {
+            guard let screen = ScreenUtility.currentScreen() else { return }
+            var sizeRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(win, kAXSizeAttribute as CFString, &sizeRef) == .success else { return }
+            var pillSize = CGSize.zero
+            AXValueGetValue(sizeRef as! AXValue, .cgSize, &pillSize)
+
+            let target = PillPreset.bottomCenter.resolve(
+                screenFrame: screen.frame,
+                workArea: screen.workArea,
+                pillSize: pillSize
+            )
+            var point = target
+            if let val = AXValueCreate(.cgPoint, &point) {
+                AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, val)
+            }
+            return
         }
+
+        repositionIfNeeded(win)
     }
 
     // MARK: - Global Mouse Monitor (Drag)
