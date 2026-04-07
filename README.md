@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Resources/AppIcon.png" alt="PillFloat icon" width="128">
+</p>
+
 # PillFloat
 
 Reposition the [Wispr Flow](https://wispr.com) dictation pill anywhere on your screen. Free, open-source, no fuss.
