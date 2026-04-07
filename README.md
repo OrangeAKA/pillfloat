@@ -19,6 +19,8 @@ Wispr Flow's dictation pill is stuck at the bottom-center of your screen. It get
 
 ## Installation
 
+Pick **one** method. Don't mix them — Homebrew and `make install` both write to `/Applications` and don't know about each other.
+
 ### Homebrew (recommended)
 
 ```bash
@@ -27,6 +29,9 @@ brew install --cask pillfloat
 ```
 
 Done. Find "PillFloat" in Spotlight and launch it.
+
+To update: `brew upgrade --cask pillfloat`
+To uninstall: `brew uninstall --cask pillfloat`
 
 ### Build from source
 
@@ -41,6 +46,8 @@ make install
 This builds the `.app` and copies it to `/Applications`.
 
 To uninstall: `make uninstall`
+
+> **Note:** `make install` will refuse to run if PillFloat is already installed via Homebrew, and vice versa.
 
 ### macOS Gatekeeper
 
