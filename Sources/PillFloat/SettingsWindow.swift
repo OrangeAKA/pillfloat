@@ -13,6 +13,7 @@ final class SettingsWindow: NSWindow {
     private var versionLabel: NSTextField!
     private var updateBanner: NSView!
     private var updateTitleLabel: NSTextField!
+    private var updateVersionCompare: NSTextField!
     private var updateCommandLabel: NSTextField!
     private var copyCommandButton: NSButton!
     private var releaseNotesButton: NSButton!
@@ -20,7 +21,7 @@ final class SettingsWindow: NSWindow {
     private var wisprStatusTimer: Timer?
 
     private let baseWindowHeight: CGFloat = 580
-    private let bannerHeight: CGFloat = 80
+    private let bannerHeight: CGFloat = 90
     private let windowWidth: CGFloat = 380
 
     init(store: PositionStore, isEnabled: Bool, onPositionChanged: @escaping () -> Void) {
@@ -52,13 +53,18 @@ final class SettingsWindow: NSWindow {
         updateBanner.isHidden = true
 
         updateTitleLabel = makeLabel("Update available", size: 12, weight: .semibold)
-        updateTitleLabel.frame = NSRect(x: 10, y: 50, width: 300, height: 18)
+        updateTitleLabel.frame = NSRect(x: 10, y: 52, width: 320, height: 18)
         updateBanner.addSubview(updateTitleLabel)
+
+        updateVersionCompare = makeLabel("", size: 11, weight: .regular)
+        updateVersionCompare.textColor = .secondaryLabelColor
+        updateVersionCompare.frame = NSRect(x: 10, y: 36, width: 320, height: 14)
+        updateBanner.addSubview(updateVersionCompare)
 
         updateCommandLabel = makeLabel("brew upgrade --cask pillfloat", size: 11, weight: .medium)
         updateCommandLabel.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .medium)
-        updateCommandLabel.textColor = .secondaryLabelColor
-        updateCommandLabel.frame = NSRect(x: 10, y: 30, width: 300, height: 16)
+        updateCommandLabel.textColor = .tertiaryLabelColor
+        updateCommandLabel.frame = NSRect(x: 10, y: 20, width: 300, height: 16)
         updateBanner.addSubview(updateCommandLabel)
 
         copyCommandButton = NSButton(title: "Copy Command", target: self, action: #selector(copyBrewCommand))
@@ -177,7 +183,7 @@ final class SettingsWindow: NSWindow {
         checkUpdateButton = NSButton(title: "Check for Updates", target: self, action: #selector(manualCheckUpdate))
         checkUpdateButton.bezelStyle = .rounded
         y -= 28
-        checkUpdateButton.frame = NSRect(x: pad, y: y, width: 160, height: 28)
+        checkUpdateButton.frame = NSRect(x: pad, y: y, width: 220, height: 28)
         content.addSubview(checkUpdateButton)
 
         // -- Uninstall --
@@ -293,7 +299,7 @@ final class SettingsWindow: NSWindow {
             self.checkUpdateButton.isEnabled = true
             self.refreshUpdateUI()
             if info == nil {
-                self.checkUpdateButton.title = "No New Updates Available"
+                self.checkUpdateButton.title = "You're on the latest version"
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
                     self?.checkUpdateButton.title = "Check for Updates"
                 }
@@ -326,11 +332,12 @@ final class SettingsWindow: NSWindow {
 
     func refreshUpdateUI() {
         let pad: CGFloat = 20
-        let topInset: CGFloat = 8
+        let topInset: CGFloat = 12
         if let update = UpdateChecker.shared.latestUpdate {
             let needsResize = updateBanner.isHidden
             updateBanner.isHidden = false
             updateTitleLabel.stringValue = "Update available: v\(update.version)"
+            updateVersionCompare.stringValue = "You have v\(UpdateChecker.shared.currentVersion) — v\(update.version) is now available"
             versionLabel.stringValue = "v\(UpdateChecker.shared.currentVersion) — Update available"
 
             if needsResize {
@@ -347,7 +354,7 @@ final class SettingsWindow: NSWindow {
         } else {
             let needsResize = !updateBanner.isHidden
             updateBanner.isHidden = true
-            versionLabel.stringValue = "v\(UpdateChecker.shared.currentVersion) — No new updates"
+            versionLabel.stringValue = "v\(UpdateChecker.shared.currentVersion) — You're on the latest version"
 
             if needsResize {
                 var windowFrame = self.frame
